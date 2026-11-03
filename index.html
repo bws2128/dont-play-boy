@@ -18,7 +18,9 @@
     --line:     rgba(245,239,232,.16);
     --display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
     --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --face-top: 40%;      /* vertical center of Bruce's face within the photo region */
+    --face-x: 45%;        /* where Bruce's face sits horizontally in the frame */
+    --face-y: 42%;        /* where his face sits vertically on screen */
+    --photo-pos: 50% 33%; /* background crop: headroom above his head, face mid-screen */
     --r-core: 104px;      /* spotlight solid radius */
     --r-edge: 168px;      /* spotlight feather radius */
   }
@@ -33,16 +35,20 @@
   .bar nav a:hover { color: var(--bone); }
   @media (max-width: 640px) { .bar nav { display: none; } }
 
-  /* hero = photo region on top, text band below — they never overlap */
-  .hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; isolation: isolate; }
+  /* full-bleed immersive hero: photo fills it, text pinned at the bottom */
+  .hero { position: relative; min-height: 100svh; display: grid; place-items: center; overflow: hidden; isolation: isolate; cursor: crosshair; }
 
-  /* ---- photo region ---- */
-  .portrait { position: relative; flex: 1 1 auto; min-height: 56svh; overflow: hidden; cursor: crosshair; }
-  .face { position: absolute; inset: 0; z-index: 0; background: url('images/headshot.jpg') 50% 38% / cover no-repeat; }
-  .face::before { content: ""; position: absolute; inset: 0; background: var(--ink); opacity: .30; }
-  .face::after  { content: ""; position: absolute; inset: 0; background: linear-gradient(215deg, color-mix(in srgb, var(--brand) 50%, transparent) 0%, transparent 60%); mix-blend-mode: multiply; }
+  /* LAYER 0 — photo */
+  .face { position: absolute; inset: 0; z-index: 0; background: url('images/headshot.jpg') var(--photo-pos) / cover no-repeat; }
+  .face::before { content: ""; position: absolute; inset: 0; background: var(--ink); opacity: .26; }
+  .face::after  { content: ""; position: absolute; inset: 0; background: linear-gradient(215deg, color-mix(in srgb, var(--brand) 48%, transparent) 0%, transparent 60%); mix-blend-mode: multiply; }
 
-  /* the reveal: a branded spotlight that shows the lion over the face */
+  /* LAYER 1 — scrim: keep his face bright up top, go dark toward the bottom for text */
+  .scrim { position: absolute; inset: 0; z-index: 1; background:
+      linear-gradient(180deg, rgba(10,7,8,.30) 0%, rgba(10,7,8,.00) 26%, rgba(10,7,8,.10) 50%, rgba(10,7,8,.72) 74%, rgba(10,7,8,.97) 90%),
+      radial-gradient(130% 70% at 50% 6%, transparent 50%, rgba(10,7,8,.45) 100%); }
+
+  /* LAYER 2 — the reveal: a branded spotlight that shows the lion OVER his face (the "helmet") */
   .reveal {
     position: absolute; inset: 0; z-index: 2;
     background: color-mix(in srgb, var(--brand) 32%, rgba(9,6,7,.86));
@@ -51,38 +57,31 @@
     -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     will-change: opacity;
   }
-  .reveal .lion { position: absolute; left: 50%; top: var(--face-top); transform: translate(-50%,-50%); width: clamp(210px, 38vw, 430px); height: auto; filter: drop-shadow(0 8px 30px rgba(0,0,0,.5)); }
-
-  /* fade the bottom of the photo into the text band */
-  .portrait::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
-    background:
-      linear-gradient(180deg, rgba(10,7,8,.22) 0%, transparent 20%, transparent 60%, rgba(10,7,8,.82) 86%, #0a0708 100%),
-      radial-gradient(130% 80% at 50% 0%, transparent 52%, rgba(10,7,8,.45) 100%); }
+  .reveal .lion { position: absolute; left: var(--face-x); top: var(--face-y); transform: translate(-50%,-50%); width: clamp(170px, 24vw, 300px); height: auto; filter: drop-shadow(0 6px 24px rgba(0,0,0,.55)); }
 
   /* hint inviting the user to move over the face */
-  .hint { position: absolute; left: 50%; top: calc(var(--face-top) + 23%); transform: translateX(-50%); z-index: 4; pointer-events: none; transition: opacity .6s ease; }
-  .hint span { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--bone-dim); text-shadow: 0 1px 12px rgba(0,0,0,.8); animation: hintbreath 2.6s ease-in-out infinite; }
+  .hint { position: absolute; left: var(--face-x); top: calc(var(--face-y) + 20%); transform: translateX(-50%); z-index: 3; pointer-events: none; transition: opacity .6s ease; }
+  .hint span { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--bone-dim); text-shadow: 0 1px 12px rgba(0,0,0,.85); animation: hintbreath 2.6s ease-in-out infinite; }
   .hint span::before { content: "✧"; color: var(--brand-bright); }
-  .portrait.touched .hint { opacity: 0; }
+  .hero.touched .hint { opacity: 0; }
   @keyframes hintbreath { 0%,100% { opacity: .45; } 50% { opacity: .95; } }
 
-  /* ---- text band ---- */
-  .content { position: relative; z-index: 1; background: var(--ink); text-align: center;
-    display: flex; flex-direction: column; align-items: center;
-    padding: clamp(22px,3.5vh,40px) clamp(20px,5vw,64px) clamp(34px,5vh,60px); }
-  .eyebrow { font-size: 12px; letter-spacing: .36em; text-transform: uppercase; color: var(--brand-bright); margin-bottom: 14px; }
-  .wordmark { display: flex; align-items: center; justify-content: center; gap: .26em; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: clamp(30px, 6.6vw, 60px); line-height: 1; letter-spacing: .01em; }
+  /* LAYER 4 — text pinned to the bottom, over the dark fade */
+  .stage { position: relative; z-index: 4; width: 100%; max-width: 1180px; padding: 0 clamp(20px,5vw,64px) clamp(26px,4.5vh,54px); display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: auto; pointer-events: none; }
+  .stage > * { pointer-events: auto; }
+  .eyebrow { font-size: 12px; letter-spacing: .36em; text-transform: uppercase; color: var(--brand-bright); margin-bottom: 12px; text-shadow: 0 1px 12px rgba(0,0,0,.7); }
+  .wordmark { display: flex; align-items: center; justify-content: center; gap: .26em; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: clamp(30px, 6.6vw, 60px); line-height: 1; letter-spacing: .01em; filter: drop-shadow(0 4px 22px rgba(0,0,0,.6)); }
   .wordmark .dont { background: var(--brand); color: #fff; padding: .06em .2em .12em; border-radius: 3px; }
   .wordmark .pb { color: var(--bone); }
-  .byline { margin-top: 8px; font-family: var(--display); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; font-size: clamp(11px,1.4vw,13px); color: var(--bone); }
+  .byline { margin-top: 8px; font-family: var(--display); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; font-size: clamp(11px,1.4vw,13px); color: var(--bone); text-shadow: 0 1px 10px rgba(0,0,0,.8); }
   .byline span { color: var(--brand-bright); }
-  .tagline { margin: 20px auto 0; max-width: 46ch; color: var(--bone-dim); font-size: clamp(15px,1.7vw,19px); line-height: 1.5; }
-  .listen { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 28px; }
+  .tagline { margin: 18px auto 0; max-width: 46ch; color: var(--bone); font-size: clamp(15px,1.7vw,19px); line-height: 1.5; text-shadow: 0 1px 16px rgba(0,0,0,.85); }
+  .listen { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 26px; }
   .btn { display: inline-flex; align-items: center; gap: 9px; padding: 13px 22px; border-radius: 999px; font-size: 13px; letter-spacing: .04em; font-weight: 600; text-decoration: none; cursor: pointer; transition: transform .15s ease, background .2s, border-color .2s; }
   .btn:hover { transform: translateY(-2px); }
   .btn.solid { background: var(--brand); color: #fff; }
   .btn.solid:hover { background: var(--brand-bright); }
-  .btn.ghost { background: rgba(255,255,255,.05); color: var(--bone); border: 1px solid var(--line); }
+  .btn.ghost { background: rgba(10,7,8,.45); color: var(--bone); border: 1px solid var(--line); backdrop-filter: blur(4px); }
   .btn.ghost:hover { border-color: var(--bone); }
   .btn .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 
@@ -91,7 +90,8 @@
   @keyframes rise { to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; transform: none; } .hint span { animation: none; } }
 
-  @media (max-width: 640px) { :root { --face-top: 40%; --r-core: 74px; --r-edge: 122px; } .portrait { min-height: 52svh; } }
+  /* mobile: the photo fills height so his face sits ~mid-upper on its own */
+  @media (max-width: 640px) { :root { --face-y: 46%; --photo-pos: 50% 30%; --r-core: 74px; --r-edge: 122px; } }
 
   .below { padding: clamp(56px,10vh,120px) clamp(20px,5vw,64px); border-top: 1px solid var(--line); background: var(--ink-soft); display: grid; gap: 14px; max-width: 760px; margin: 0 auto; text-align: center; }
   .below h2 { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; font-size: clamp(26px,4vw,40px); }
@@ -104,15 +104,14 @@
   <nav><a href="#">Episodes</a><a href="#">About</a><a href="#">Listen</a></nav>
 </header>
 
-<section class="hero">
-  <div class="portrait" id="portrait">
-    <div class="face"></div>
-    <!-- the reveal spotlight: lion shown only under the pointer / ambient drift -->
-    <div class="reveal" id="reveal"><img class="lion" src="images/lion.png" alt=""></div>
-    <div class="hint"><span>Move over Bruce</span></div>
-  </div>
+<section class="hero" id="hero">
+  <div class="face"></div>
+  <div class="scrim"></div>
 
-  <div class="content">
+  <!-- the reveal spotlight: the lion appears OVER his face (ambient drift + cursor) -->
+  <div class="reveal" id="reveal"><img class="lion" src="images/lion.png" alt=""></div>
+
+  <div class="stage">
     <p class="eyebrow rise d1">The Podcast</p>
     <div class="wordmark rise d2"><span class="dont">Don't</span><span class="pb">Play&nbsp;Boy</span></div>
     <p class="byline rise d2">with <span>Bruce Sawinski</span></p>
@@ -133,20 +132,23 @@
 
 <script>
   (function () {
-    var portrait = document.getElementById('portrait');
+    var hero = document.getElementById('hero');
     var reveal = document.getElementById('reveal');
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     var mode = 'ambient';        // 'ambient' shimmer  ->  'pointer' when the user moves over the face
     var px = -400, py = -400, lastMove = -9999;
-    var W = 0, H = 0, cx = 0, cy = 0, faceFrac = 0.40;
+    var W = 0, H = 0, cx = 0, cy = 0, faceX = 0.5, faceY = 0.38;
 
+    function pct(name, fallback) {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+      return (parseFloat(v) || fallback) / 100;
+    }
     function measure() {
-      var r = portrait.getBoundingClientRect();
+      var r = hero.getBoundingClientRect();
       W = r.width; H = r.height;
-      var v = getComputedStyle(document.documentElement).getPropertyValue('--face-top');
-      faceFrac = (parseFloat(v) || 40) / 100;
-      cx = W * 0.5; cy = H * faceFrac;
+      faceX = pct('--face-x', 50); faceY = pct('--face-y', 38);
+      cx = W * faceX; cy = H * faceY;
     }
     measure();
     window.addEventListener('resize', measure);
@@ -162,36 +164,38 @@
     function frame(ts) {
       var t = ts / 1000;
       if (mode === 'pointer') {
-        place(px, py, 104, 168, 1);
+        // large spotlight so the whole crowned lion reads as a "helmet" over the face
+        place(px, py, 215, 320, 1);
         if (ts - lastMove > 2200) mode = 'ambient';   // hand back to shimmer after idle
       } else if (reduce) {
-        reveal.style.opacity = 0;                      // no autoplay if the user prefers reduced motion
+        reveal.style.opacity = 0;
       } else {
-        // slow wander tracing small glimpses across the lion, softly breathing
-        var ang = t * 0.55;
-        var rx = W * 0.11, ry = H * 0.075;
-        var x = cx + Math.cos(ang) * rx + Math.cos(ang * 0.5) * rx * 0.35;
-        var y = cy + Math.sin(ang * 1.3) * ry;
-        var pulse = 0.5 + 0.5 * Math.sin(t * 1.9);     // 0..1 breathing
-        var core = 22 + pulse * 20;
-        place(x, y, core, core + 52, 0.45 + pulse * 0.5);
+        // ambient: a soft reveal near the face that breathes the lion in and out, with a gentle drift
+        var ang = t * 0.5;
+        var rx = W * 0.045, ry = H * 0.035;
+        var x = cx + Math.cos(ang) * rx;
+        var y = cy + Math.sin(ang * 1.2) * ry;
+        var pulse = 0.5 + 0.5 * Math.sin(t * 1.5);     // 0..1 breathing
+        var core = 70 + pulse * 95;                     // grows enough to show the lion's shape
+        place(x, y, core, core + 80, 0.30 + pulse * 0.5);
       }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
 
     function move(e) {
-      var r = portrait.getBoundingClientRect();
+      var r = hero.getBoundingClientRect();
       var p = e.touches ? e.touches[0] : e;
       var x = p.clientX - r.left, y = p.clientY - r.top;
-      if (x < 0 || x > r.width || y < 0 || y > r.height) { mode = 'ambient'; return; }
+      // reveal only over the upper 70% (the face/body), never behind the bottom text
+      if (x < 0 || x > r.width || y < 0 || y > r.height * 0.70) { mode = 'ambient'; return; }
       px = x; py = y; mode = 'pointer';
       lastMove = (e.timeStamp != null) ? e.timeStamp : performance.now();
-      portrait.classList.add('touched');
+      hero.classList.add('touched');
     }
-    portrait.addEventListener('pointermove', move);
-    portrait.addEventListener('touchmove', move, { passive: true });
-    portrait.addEventListener('pointerleave', function () { mode = 'ambient'; });
+    hero.addEventListener('pointermove', move);
+    hero.addEventListener('touchmove', move, { passive: true });
+    hero.addEventListener('pointerleave', function () { mode = 'ambient'; });
   })();
 </script>
 </body>
