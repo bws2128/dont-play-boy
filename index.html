@@ -18,7 +18,7 @@
     --line:     rgba(245,239,232,.16);
     --display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
     --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --face-top: 34%;      /* vertical center of Bruce's face in the hero */
+    --face-top: 40%;      /* vertical center of Bruce's face within the photo region */
     --r-core: 104px;      /* spotlight solid radius */
     --r-edge: 168px;      /* spotlight feather radius */
   }
@@ -33,19 +33,16 @@
   .bar nav a:hover { color: var(--bone); }
   @media (max-width: 640px) { .bar nav { display: none; } }
 
-  .hero { position: relative; min-height: 100svh; display: grid; place-items: center; overflow: hidden; isolation: isolate; cursor: crosshair; }
+  /* hero = photo region on top, text band below — they never overlap */
+  .hero { position: relative; min-height: 100svh; display: flex; flex-direction: column; isolation: isolate; }
 
-  /* LAYER 0 — photo */
-  .face { position: absolute; inset: 0; z-index: 0; background-image: url('images/headshot.jpg'); background-size: cover; background-position: 50% 15%; background-repeat: no-repeat; }
-  .face::before { content: ""; position: absolute; inset: 0; background: var(--ink); opacity: .32; }
-  .face::after  { content: ""; position: absolute; inset: 0; background: linear-gradient(215deg, color-mix(in srgb, var(--brand) 55%, transparent) 0%, transparent 58%); mix-blend-mode: multiply; }
+  /* ---- photo region ---- */
+  .portrait { position: relative; flex: 1 1 auto; min-height: 56svh; overflow: hidden; cursor: crosshair; }
+  .face { position: absolute; inset: 0; z-index: 0; background: url('images/headshot.jpg') 50% 38% / cover no-repeat; }
+  .face::before { content: ""; position: absolute; inset: 0; background: var(--ink); opacity: .30; }
+  .face::after  { content: ""; position: absolute; inset: 0; background: linear-gradient(215deg, color-mix(in srgb, var(--brand) 50%, transparent) 0%, transparent 60%); mix-blend-mode: multiply; }
 
-  /* LAYER 1 — bottom scrim for text legibility */
-  .scrim { position: absolute; inset: 0; z-index: 1; background:
-      linear-gradient(180deg, rgba(10,7,8,.28) 0%, rgba(10,7,8,.02) 20%, rgba(10,7,8,.30) 46%, rgba(10,7,8,.90) 66%, #0a0708 82%),
-      radial-gradient(120% 74% at 50% 2%, transparent 42%, rgba(10,7,8,.5) 100%); }
-
-  /* LAYER 2 — the reveal: a branded spotlight that shows the lion over the face */
+  /* the reveal: a branded spotlight that shows the lion over the face */
   .reveal {
     position: absolute; inset: 0; z-index: 2;
     background: color-mix(in srgb, var(--brand) 32%, rgba(9,6,7,.86));
@@ -54,43 +51,47 @@
     -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
     will-change: opacity;
   }
-  .reveal .lion { position: absolute; left: 50%; top: var(--face-top); transform: translate(-50%,-50%); width: clamp(250px, 48vw, 500px); height: auto; filter: drop-shadow(0 8px 30px rgba(0,0,0,.5)); }
+  .reveal .lion { position: absolute; left: 50%; top: var(--face-top); transform: translate(-50%,-50%); width: clamp(210px, 38vw, 430px); height: auto; filter: drop-shadow(0 8px 30px rgba(0,0,0,.5)); }
 
-  /* hint ring inviting the user to move over the face */
-  .hint { position: absolute; left: 50%; top: calc(var(--face-top) + 20%); transform: translateX(-50%); z-index: 3; pointer-events: none; transition: opacity .6s ease; }
+  /* fade the bottom of the photo into the text band */
+  .portrait::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(10,7,8,.22) 0%, transparent 20%, transparent 60%, rgba(10,7,8,.82) 86%, #0a0708 100%),
+      radial-gradient(130% 80% at 50% 0%, transparent 52%, rgba(10,7,8,.45) 100%); }
+
+  /* hint inviting the user to move over the face */
+  .hint { position: absolute; left: 50%; top: calc(var(--face-top) + 23%); transform: translateX(-50%); z-index: 4; pointer-events: none; transition: opacity .6s ease; }
   .hint span { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 700; font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--bone-dim); text-shadow: 0 1px 12px rgba(0,0,0,.8); animation: hintbreath 2.6s ease-in-out infinite; }
   .hint span::before { content: "✧"; color: var(--brand-bright); }
-  .hero.touched .hint { opacity: 0; }
+  .portrait.touched .hint { opacity: 0; }
   @keyframes hintbreath { 0%,100% { opacity: .45; } 50% { opacity: .95; } }
 
-  /* LAYER 4 — content */
-  .stage { position: relative; z-index: 4; width: 100%; max-width: 1180px; padding: 0 clamp(20px,5vw,64px) clamp(24px,4vh,52px); display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: auto; pointer-events: none; }
-  .stage > * { pointer-events: auto; }
-  .eyebrow { font-size: 12px; letter-spacing: .36em; text-transform: uppercase; color: var(--brand-bright); margin-bottom: 14px; text-shadow: 0 1px 12px rgba(0,0,0,.6); }
-  .wordmark { display: flex; align-items: center; justify-content: center; gap: .26em; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: clamp(30px, 6.6vw, 60px); line-height: 1; letter-spacing: .01em; filter: drop-shadow(0 4px 22px rgba(0,0,0,.55)); }
+  /* ---- text band ---- */
+  .content { position: relative; z-index: 1; background: var(--ink); text-align: center;
+    display: flex; flex-direction: column; align-items: center;
+    padding: clamp(22px,3.5vh,40px) clamp(20px,5vw,64px) clamp(34px,5vh,60px); }
+  .eyebrow { font-size: 12px; letter-spacing: .36em; text-transform: uppercase; color: var(--brand-bright); margin-bottom: 14px; }
+  .wordmark { display: flex; align-items: center; justify-content: center; gap: .26em; font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: clamp(30px, 6.6vw, 60px); line-height: 1; letter-spacing: .01em; }
   .wordmark .dont { background: var(--brand); color: #fff; padding: .06em .2em .12em; border-radius: 3px; }
   .wordmark .pb { color: var(--bone); }
-  .byline { margin-top: 6px; font-family: var(--display); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; font-size: clamp(11px,1.4vw,13px); color: var(--bone); }
+  .byline { margin-top: 8px; font-family: var(--display); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; font-size: clamp(11px,1.4vw,13px); color: var(--bone); }
   .byline span { color: var(--brand-bright); }
-  .tagline { margin: 22px auto 0; max-width: 46ch; color: var(--bone); font-size: clamp(15px,1.7vw,19px); line-height: 1.5; text-shadow: 0 1px 16px rgba(0,0,0,.7); }
-  .listen { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 30px; }
+  .tagline { margin: 20px auto 0; max-width: 46ch; color: var(--bone-dim); font-size: clamp(15px,1.7vw,19px); line-height: 1.5; }
+  .listen { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 28px; }
   .btn { display: inline-flex; align-items: center; gap: 9px; padding: 13px 22px; border-radius: 999px; font-size: 13px; letter-spacing: .04em; font-weight: 600; text-decoration: none; cursor: pointer; transition: transform .15s ease, background .2s, border-color .2s; }
   .btn:hover { transform: translateY(-2px); }
   .btn.solid { background: var(--brand); color: #fff; }
   .btn.solid:hover { background: var(--brand-bright); }
-  .btn.ghost { background: rgba(10,7,8,.4); color: var(--bone); border: 1px solid var(--line); backdrop-filter: blur(4px); }
+  .btn.ghost { background: rgba(255,255,255,.05); color: var(--bone); border: 1px solid var(--line); }
   .btn.ghost:hover { border-color: var(--bone); }
   .btn .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 
-  .cue { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 4; font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: var(--bone-dim); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
-  .cue::after { content: ""; width: 1px; height: 28px; background: linear-gradient(var(--bone-dim), transparent); }
-
-  .rise { opacity: 0; transform: translateY(22px); animation: rise .9s cubic-bezier(.2,.7,.2,1) forwards; }
+  .rise { opacity: 0; transform: translateY(18px); animation: rise .9s cubic-bezier(.2,.7,.2,1) forwards; }
   .d1{animation-delay:.05s}.d2{animation-delay:.18s}.d3{animation-delay:.32s}.d4{animation-delay:.46s}
   @keyframes rise { to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; transform: none; } .hint span { animation: none; } }
 
-  @media (max-width: 640px) { :root { --face-top: 30%; --r-core: 74px; --r-edge: 122px; } }
+  @media (max-width: 640px) { :root { --face-top: 40%; --r-core: 74px; --r-edge: 122px; } .portrait { min-height: 52svh; } }
 
   .below { padding: clamp(56px,10vh,120px) clamp(20px,5vw,64px); border-top: 1px solid var(--line); background: var(--ink-soft); display: grid; gap: 14px; max-width: 760px; margin: 0 auto; text-align: center; }
   .below h2 { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; font-size: clamp(26px,4vw,40px); }
@@ -103,15 +104,15 @@
   <nav><a href="#">Episodes</a><a href="#">About</a><a href="#">Listen</a></nav>
 </header>
 
-<section class="hero" id="hero">
-  <div class="face"></div>
-  <div class="scrim"></div>
+<section class="hero">
+  <div class="portrait" id="portrait">
+    <div class="face"></div>
+    <!-- the reveal spotlight: lion shown only under the pointer / ambient drift -->
+    <div class="reveal" id="reveal"><img class="lion" src="images/lion.png" alt=""></div>
+    <div class="hint"><span>Move over Bruce</span></div>
+  </div>
 
-  <!-- the reveal spotlight: lion shown only under the pointer -->
-  <div class="reveal" id="reveal"><img class="lion" src="images/lion.png" alt=""></div>
-  <div class="hint"><span>Move over Bruce</span></div>
-
-  <div class="stage">
+  <div class="content">
     <p class="eyebrow rise d1">The Podcast</p>
     <div class="wordmark rise d2"><span class="dont">Don't</span><span class="pb">Play&nbsp;Boy</span></div>
     <p class="byline rise d2">with <span>Bruce Sawinski</span></p>
@@ -132,19 +133,19 @@
 
 <script>
   (function () {
-    var hero = document.getElementById('hero');
+    var portrait = document.getElementById('portrait');
     var reveal = document.getElementById('reveal');
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     var mode = 'ambient';        // 'ambient' shimmer  ->  'pointer' when the user moves over the face
     var px = -400, py = -400, lastMove = -9999;
-    var W = 0, H = 0, cx = 0, cy = 0, faceFrac = 0.34;
+    var W = 0, H = 0, cx = 0, cy = 0, faceFrac = 0.40;
 
     function measure() {
-      var r = hero.getBoundingClientRect();
+      var r = portrait.getBoundingClientRect();
       W = r.width; H = r.height;
       var v = getComputedStyle(document.documentElement).getPropertyValue('--face-top');
-      faceFrac = (parseFloat(v) || 34) / 100;
+      faceFrac = (parseFloat(v) || 40) / 100;
       cx = W * 0.5; cy = H * faceFrac;
     }
     measure();
@@ -166,7 +167,7 @@
       } else if (reduce) {
         reveal.style.opacity = 0;                      // no autoplay if the user prefers reduced motion
       } else {
-        // slow wander that traces small glimpses across the lion, softly blinking
+        // slow wander tracing small glimpses across the lion, softly breathing
         var ang = t * 0.55;
         var rx = W * 0.11, ry = H * 0.075;
         var x = cx + Math.cos(ang) * rx + Math.cos(ang * 0.5) * rx * 0.35;
@@ -180,17 +181,17 @@
     requestAnimationFrame(frame);
 
     function move(e) {
-      var r = hero.getBoundingClientRect();
+      var r = portrait.getBoundingClientRect();
       var p = e.touches ? e.touches[0] : e;
       var x = p.clientX - r.left, y = p.clientY - r.top;
-      if (x < 0 || x > r.width || y < 0 || y > r.height * 0.64) { mode = 'ambient'; return; }
+      if (x < 0 || x > r.width || y < 0 || y > r.height) { mode = 'ambient'; return; }
       px = x; py = y; mode = 'pointer';
       lastMove = (e.timeStamp != null) ? e.timeStamp : performance.now();
-      hero.classList.add('touched');
+      portrait.classList.add('touched');
     }
-    hero.addEventListener('pointermove', move);
-    hero.addEventListener('touchmove', move, { passive: true });
-    hero.addEventListener('pointerleave', function () { mode = 'ambient'; });
+    portrait.addEventListener('pointermove', move);
+    portrait.addEventListener('touchmove', move, { passive: true });
+    portrait.addEventListener('pointerleave', function () { mode = 'ambient'; });
   })();
 </script>
 </body>
