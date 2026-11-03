@@ -18,11 +18,11 @@
     --line:     rgba(245,239,232,.16);
     --display: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
     --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --face-x: 45%;        /* where Bruce's face sits horizontally in the frame */
-    --face-y: 42%;        /* where his face sits vertically on screen */
-    --photo-pos: 50% 33%; /* background crop: headroom above his head, face mid-screen */
-    --r-core: 104px;      /* spotlight solid radius */
-    --r-edge: 168px;      /* spotlight feather radius */
+    --face-x: 50%;        /* where Bruce's face sits horizontally in the frame */
+    --face-y: 33%;        /* where his face sits vertically on screen */
+    --photo-pos: 50% 50%; /* background crop: canvas is pre-framed, so show it centered */
+    --r-core: 200px;      /* spotlight solid radius — large so the whole lion reads */
+    --r-edge: 320px;      /* spotlight feather radius */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--ink); color: var(--bone); font-family: var(--body); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
@@ -51,7 +51,7 @@
   /* LAYER 2 — the reveal: a branded spotlight that shows the lion OVER his face (the "helmet") */
   .reveal {
     position: absolute; inset: 0; z-index: 2;
-    background: color-mix(in srgb, var(--brand) 32%, rgba(9,6,7,.86));
+    background: color-mix(in srgb, var(--brand) 60%, transparent);
     -webkit-mask-image: radial-gradient(circle at var(--mx,-400px) var(--my,-400px), #000 0, #000 var(--r-core), transparent var(--r-edge));
             mask-image: radial-gradient(circle at var(--mx,-400px) var(--my,-400px), #000 0, #000 var(--r-core), transparent var(--r-edge));
     -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
@@ -91,7 +91,7 @@
   @media (prefers-reduced-motion: reduce) { .rise { animation: none; opacity: 1; transform: none; } .hint span { animation: none; } }
 
   /* mobile: the photo fills height so his face sits ~mid-upper on its own */
-  @media (max-width: 640px) { :root { --face-y: 46%; --photo-pos: 50% 30%; --r-core: 74px; --r-edge: 122px; } }
+  @media (max-width: 640px) { :root { --face-y: 34%; --photo-pos: 50% 42%; --r-core: 150px; --r-edge: 232px; } }
 
   .below { padding: clamp(56px,10vh,120px) clamp(20px,5vw,64px); border-top: 1px solid var(--line); background: var(--ink-soft); display: grid; gap: 14px; max-width: 760px; margin: 0 auto; text-align: center; }
   .below h2 { font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: -.01em; font-size: clamp(26px,4vw,40px); }
@@ -127,7 +127,7 @@
 <section class="below">
   <h2>About the Show</h2>
   <p>This is where a couple of sentences about Don't Play Boy live — who it's for, what it's really about, and why someone should hit play. Real copy replaces this.</p>
-  <p class="note">move over Bruce's face to reveal the lion — swap copy &amp; links next</p>
+  <p class="note">placeholder copy — real story &amp; listen links coming soon</p>
 </section>
 
 <script>
@@ -164,20 +164,22 @@
     function frame(ts) {
       var t = ts / 1000;
       if (mode === 'pointer') {
-        // large spotlight so the whole crowned lion reads as a "helmet" over the face
-        place(px, py, 215, 320, 1);
-        if (ts - lastMove > 2200) mode = 'ambient';   // hand back to shimmer after idle
+        // keep the lion parked OVER the face; the cursor only nudges it a little (parallax)
+        var ox = Math.max(-52, Math.min(52, (px - cx) * 0.18));
+        var oy = Math.max(-44, Math.min(44, (py - cy) * 0.18));
+        place(cx + ox, cy + oy, 208, 326, 1);
+        if (ts - lastMove > 2200) mode = 'ambient';   // hand back to the resting lion after idle
       } else if (reduce) {
-        reveal.style.opacity = 0;
+        // reduced motion: hold the lion steady over the face, no movement
+        place(cx, cy, 200, 320, 1);
       } else {
-        // ambient: a soft reveal near the face that breathes the lion in and out, with a gentle drift
-        var ang = t * 0.5;
-        var rx = W * 0.045, ry = H * 0.035;
-        var x = cx + Math.cos(ang) * rx;
-        var y = cy + Math.sin(ang * 1.2) * ry;
-        var pulse = 0.5 + 0.5 * Math.sin(t * 1.5);     // 0..1 breathing
-        var core = 70 + pulse * 95;                     // grows enough to show the lion's shape
-        place(x, y, core, core + 80, 0.30 + pulse * 0.5);
+        // ambient: the lion rests as a "helmet" OVER the face — always visible, with a gentle living shimmer
+        var drift = 10;                                 // tiny parallax so it breathes, never blinks out
+        var x = cx + Math.cos(t * 0.45) * drift;
+        var y = cy + Math.sin(t * 0.6) * (drift * 0.7);
+        var breath = 0.5 + 0.5 * Math.sin(t * 1.1);     // slow 0..1
+        var core = 200 + breath * 22;                   // stays large: the whole lion is always revealed
+        place(x, y, core, core + 110, 0.9 + breath * 0.1); // opacity 0.9..1.0 — present, steady
       }
       requestAnimationFrame(frame);
     }
