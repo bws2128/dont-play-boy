@@ -134,21 +134,65 @@
   (function () {
     var hero = document.getElementById('hero');
     var reveal = document.getElementById('reveal');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var mode = 'ambient', px = 0, py = 0, lastMove = -9999;
+    var W = 0, H = 0, cx = 0, cy = 0;
+    var rCore = 100, rEdge = 172, rx = 90, ry = 118;   // spotlight size + how far it roams
 
     function pct(name, fallback) {
       var v = getComputedStyle(document.documentElement).getPropertyValue(name);
       return (parseFloat(v) || fallback) / 100;
     }
-    // park the lion STEADILY over the face — no drift, no pulse, no cursor movement.
-    // radii come from CSS (:root + mobile media query); we only center the spotlight.
-    function place() {
+    function measure() {
       var r = hero.getBoundingClientRect();
-      reveal.style.setProperty('--mx', (r.width  * pct('--face-x', 50)) + 'px');
-      reveal.style.setProperty('--my', (r.height * pct('--face-y', 33)) + 'px');
-      reveal.style.opacity = 1;
+      W = r.width; H = r.height;
+      cx = W * pct('--face-x', 50); cy = H * pct('--face-y', 33);
+      // size the spotlight to the lion so it reveals only PART of it (not the whole thing)
+      var lw = Math.max(170, Math.min(300, 0.24 * W));   // matches the lion's clamp() width
+      var lh = lw * 1.64;                                 // lion aspect (400x656)
+      rCore = lh * 0.20; rEdge = lh * 0.35;               // small, steady circle
+      rx = lh * 0.18; ry = lh * 0.24;                     // roam reach across the face
     }
-    place();
-    window.addEventListener('resize', place);
+    measure();
+    window.addEventListener('resize', measure);
+
+    function place(x, y) {
+      reveal.style.setProperty('--mx', x + 'px');
+      reveal.style.setProperty('--my', y + 'px');
+      reveal.style.setProperty('--r-core', rCore + 'px');
+      reveal.style.setProperty('--r-edge', rEdge + 'px');
+      reveal.style.opacity = 1;                           // constant brightness — it moves, never blinks
+    }
+
+    function frame(ts) {
+      var t = ts / 1000;
+      if (mode === 'pointer') {
+        place(px, py);                                    // follow the cursor over the face
+        if (ts - lastMove > 2600) mode = 'ambient';
+      } else if (reduce) {
+        place(cx, cy);                                    // reduced motion: hold it still over the face
+      } else {
+        // a small spotlight that wanders over the face, catching the lion in pieces
+        var x = cx + Math.cos(t * 0.5)  * rx;
+        var y = cy + Math.sin(t * 0.73) * ry;
+        place(x, y);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+
+    function move(e) {
+      var r = hero.getBoundingClientRect();
+      var p = e.touches ? e.touches[0] : e;
+      var x = p.clientX - r.left, y = p.clientY - r.top;
+      if (x < 0 || x > r.width || y < 0 || y > r.height * 0.72) { mode = 'ambient'; return; }
+      px = x; py = y; mode = 'pointer';
+      lastMove = (e.timeStamp != null) ? e.timeStamp : performance.now();
+    }
+    hero.addEventListener('pointermove', move);
+    hero.addEventListener('touchmove', move, { passive: true });
+    hero.addEventListener('pointerleave', function () { mode = 'ambient'; });
   })();
 </script>
 </body>
